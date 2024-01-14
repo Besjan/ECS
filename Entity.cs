@@ -1,4 +1,4 @@
-﻿#if MOREAN_ECS
+#if MOREAN_ECS
 using Entitas;
 using System;
 using System.Collections.Generic;
@@ -7,13 +7,13 @@ using System.Linq;
 namespace Morean.ECS
 {
     /// <summary>
-    /// Provides <see cref="Entitas.Entity"/> related utilities such as
+    /// Provides <see cref="Entity"/> related utilities such as
     /// adding, removing and replacing components.
     /// </summary>
-    public static class Entity
+    public static class EntityExtentions
     {
-        public static bool HasComponent(this IEntity entity, IComponent component)
-            => entity.HasComponent(Array.IndexOf(entity.contextInfo.componentTypes, component.GetType()));
+        public static bool HasComponent(this Entity entity, IComponent component)
+            => entity.HasComponent(Array.IndexOf(entity.ContextInfo.ComponentTypes, component.GetType()));
 
         public static IComponent GetComponent(string name)
         {
@@ -30,9 +30,9 @@ namespace Morean.ECS
         /// <summary>
         /// Add <paramref name="components"/> to <paramref name="entity"/>.
         /// </summary>
-        public static void AddComponents(this IEntity entity, params IComponent[] components)
+        public static void AddComponents(this Entity entity, params IComponent[] components)
         {
-            var componentTypes = entity.contextInfo.componentTypes;
+            var componentTypes = entity.ContextInfo.ComponentTypes;
             for (int i = 0; i < components.Length; i++)
             {
                 var component = components[i];
@@ -49,9 +49,9 @@ namespace Morean.ECS
         /// Add components matched by <paramref name="indices"/> to <paramref name="entity"/>.
         /// </summary>
         /// <param name="indices">Component indices in the <paramref name="componentTypes"/>.</param>
-        public static void AddComponents(this IEntity entity, int[] indices)
+        public static void AddComponents(this Entity entity, int[] indices)
         {
-            var componentTypes = entity.contextInfo.componentTypes;
+            var componentTypes = entity.ContextInfo.ComponentTypes;
             for (int i = 0; i < indices.Length; i++)
             {
                 var index = indices[i];
@@ -67,9 +67,9 @@ namespace Morean.ECS
         /// <summary>
         /// Replace <paramref name="components"/> to <paramref name="entity"/>.
         /// </summary>
-        public static void ReplaceComponents(this IEntity entity, params IComponent[] components)
+        public static void ReplaceComponents(this Entity entity, params IComponent[] components)
         {
-            var componentTypes = entity.contextInfo.componentTypes;
+            var componentTypes = entity.ContextInfo.ComponentTypes;
             for (int i = 0; i < components.Length; i++)
             {
                 var component = components[i];
@@ -85,7 +85,7 @@ namespace Morean.ECS
         /// <summary>
         /// Subtract components with <paramref name="indices"/> from <paramref name="entities"/>.
         /// </summary>
-        public static List<IComponent> SubtractComponents(this IEntity[] entities, params int[] indices)
+        public static List<IComponent> SubtractComponents(this Entity[] entities, params int[] indices)
         {
             var remainderComponents = new List<IComponent>();
             for (int i = 0; i < entities.Length; i++)
@@ -100,9 +100,9 @@ namespace Morean.ECS
         /// <summary>
         /// Subtract components with <paramref name="indices"/> from <paramref name="entity"/>.
         /// </summary>
-        public static IComponent[] SubtractComponents(this IEntity entity, params int[] indices)
+        public static IComponent[] SubtractComponents(this Entity entity, params int[] indices)
         {
-            var componentIndices = entity.GetComponentIndices();
+            var componentIndices = entity.GetComponentIndexes();
             var remainderIndices = new List<int>();
             for (var i = 0; i < componentIndices.Length; i++)
             {
@@ -132,10 +132,10 @@ namespace Morean.ECS
             return remainderComponents;
         }
 
-        public static int[] Indices(this IEntity entity, params IComponent[] components)
+        public static int[] Indices(this Entity entity, params IComponent[] components)
         {
             var indices = new List<int>();
-            var componentTypes = entity.contextInfo.componentTypes;
+            var componentTypes = entity.ContextInfo.ComponentTypes;
             foreach (var component in components)
             {
                 indices.Add(Array.IndexOf(componentTypes, component.GetType()));

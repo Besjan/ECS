@@ -1,9 +1,12 @@
-﻿#if MOREAN_ECS
+#if MOREAN_ECS
 using Entitas;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using static Morean.Assets.Extensions;
+using System.Linq;
+using System.Reflection;
+using UnityEngine.Rendering;
+//using static Morean.Assets.Extensions;
 
 namespace Morean.ECS
 {
@@ -11,44 +14,55 @@ namespace Morean.ECS
     /// Provides <see cref="IContexts"/> related utilities such as creating entities
     /// and serializing and deserializing contexts with entities and components.
     /// </summary>
-    public static class Context
+    public static class ContextExtentions
     {
         #region Context
 
         private static string contextCreateEntityMethod = "CreateEntity";
         private static string contextGetEntitiesMethod = "GetEntities";
 
-        /// <summary>
-        /// Create <see cref="IEntity"/> in <paramref name="context"/>.
-        /// </summary>
-        public static IEntity CreateEntity(this IContext context)
-            => (IEntity)context.GetType().GetMethod(contextCreateEntityMethod).Invoke(context, null);
+        private static Type[] contexts;
+
+
+        static ContextExtentions()
+        {
+            contexts = Assembly.GetExecutingAssembly().GetTypes()
+                .Where(type => typeof(IContext).IsAssignableFrom(type) && !type.IsInterface).ToArray();
+        }
 
         /// <summary>
-        /// Get <see cref="IEntity"/> colleciton in <paramref name="context"/>.
+        /// Create <see cref="Entity"/> in <paramref name="context"/>.
         /// </summary>
-        public static IEntity[] GetEntities(this IContext context)
-            => (IEntity[])context.GetType().GetMethod(contextGetEntitiesMethod).Invoke(context, null);
+        public static Entity CreateEntity(this IContext context)
+            => (Entity)context.GetType().GetMethod(contextCreateEntityMethod).Invoke(context, null);
 
         /// <summary>
-        /// Find context by name.
+        /// Get <see cref="Entity"/> colleciton in <paramref name="context"/>.
         /// </summary>
-        public static IContext GetContext(this ContextData data) => GetContext(data.Context);
+        public static Entity[] GetEntities(this IContext context)
+            => (Entity[])context.GetType().GetMethod(contextGetEntitiesMethod).Invoke(context, null);
 
         /// <summary>
-        /// Find context by name.
+        /// Find contextType by name.
         /// </summary>
-        public static IContext GetContext(string context)
-            => Array.Find(Contexts.sharedInstance.allContexts, match => match.ToString() == context);
+        public static Type GetContext(this ContextData data) => GetContext(data.Context);
+
+        /// <summary>
+        /// Find contextType by name.
+        /// </summary>
+        public static Type GetContext(string context)
+            => contexts.FirstOrDefault(type => typeof(IContext).IsAssignableFrom(type) && !type.IsInterface);
+
+            //=> Array.Find(contexts, match => match.Name == contextType) as IContext;
 
         #endregion Context
 
         #region Entity
 
         /// <summary>
-        /// Create <see cref="IEntity"/> collection in <paramref name="context"/>.
+        /// Create <see cref="Entity"/> collection in <paramref name="context"/>.
         /// </summary>
-        public static void CreateEntities(this IContext context, params IComponent[][] entities)
+        public static void CreateEntities(this Type context, params IComponent[][] entities)
         {
             var createdEntities = context.CreateEntities(entities.Length);
             for (int i = 0; i < createdEntities.Length; i++)
@@ -58,29 +72,30 @@ namespace Morean.ECS
         }
 
         /// <summary>
-        /// Create <see cref="IEntity"/> in <paramref name="context"/>
+        /// Create <see cref="Entity"/> in <paramref name="context"/>
         /// and add <paramref name="components"/>.
         /// </summary>
         public static void CreateEntity(this IContext context, params IComponent[] components)
             => context.CreateEntity().AddComponents(components);
 
         /// <summary>
-        /// Create <see cref="IEntity"/> in <paramref name="context"/>
+        /// Create <see cref="Entity"/> in <paramref name="context"/>
         /// and add <see cref="IComponent"/>s from <paramref name="componentIndices"/>.
         /// </summary>
         public static void CreateEntity(this IContext context, params int[] componentIndices)
             => context.CreateEntity().AddComponents(componentIndices);
 
         /// <summary>
-        /// Create <see cref="IEntity"/> collection in <paramref name="context"/>.
+        /// Create <see cref="Entity"/> collection in <paramref name="contextType"/>.
         /// </summary>
-        public static IEntity[] CreateEntities(this IContext context, int count)
+        public static Entity[] CreateEntities(this Type contextType, int count)
         {
-            var entities = new IEntity[count];
+            var entities = new Entity[count];
+            var context = (IContext)Activator.CreateInstance(contextType);
             var creationMethod = context.GetType().GetMethod(contextCreateEntityMethod);
             for (int i = 0; i < count; i++)
             {
-                entities[i] = (IEntity)creationMethod.Invoke(context, null);
+                entities[i] = (Entity)creationMethod.Invoke(context, null);
             }
             return entities;
         }
@@ -94,18 +109,18 @@ namespace Morean.ECS
             TypeNameHandling = TypeNameHandling.Auto,
         };
 
-        /// <summary>
-        /// Deserialize contexts from Json asset and create their entities.
-        /// </summary>
-        public static async void LoadEntitiesAsync(string key)
-        {
-            var asset = await key.LoadAsset<UnityEngine.TextAsset>();
-            foreach (var contextData in DeserializeContexs(asset.Value.text))
-            {
-                contextData.GetContext().CreateEntities(contextData.Entities);
-            }
-            asset.Key.UnloadAsset();
-        }
+        ///// <summary>
+        ///// Deserialize contexts from Json asset and create their entities.
+        ///// </summary>
+        //public static async void LoadEntitiesAsync(string key)
+        //{
+        //    var asset = await key.LoadAsset<UnityEngine.TextAsset>();
+        //    foreach (var contextData in DeserializeContexs(asset.Value.text))
+        //    {
+        //        contextData.GetContext().CreateEntities(contextData.Entities);
+        //    }
+        //    asset.Key.UnloadAsset();
+        //}
 
         /// <summary>
         /// Serialize all entities in <paramref name="contexts"/> to Json.
@@ -118,7 +133,7 @@ namespace Morean.ECS
             {
                 var context = contexts[i];
                 var serializedContext = new ContextData();
-                serializedContext.Context = context.contextInfo.name;
+                serializedContext.Context = context.GetType().Name;
 
                 var entities = context.GetEntities();
                 var serializedEntities = new List<IComponent[]>();
