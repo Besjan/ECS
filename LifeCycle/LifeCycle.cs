@@ -1,4 +1,6 @@
 #if MOREAN_ECS
+using Entitas.Unity;
+
 namespace Morean.ECS
 {
     public class LifeCycle
@@ -10,7 +12,10 @@ namespace Morean.ECS
         public LifeCycle()
         {
             ContextInitialization.InitializeContexts();
-            features = new Features(AssetContext.Instance);
+            var assetContext = AssetContext.Instance;
+            assetContext.CreateContextObserver();
+
+            features = new Features(assetContext);
         }
 
         public void Initialize()

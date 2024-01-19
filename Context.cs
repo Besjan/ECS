@@ -5,7 +5,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using UnityEngine.Rendering;
 //using static Morean.Assets.Extensions;
 
 namespace Morean.ECS
@@ -18,6 +17,7 @@ namespace Morean.ECS
     {
         #region Context
 
+        private static string contextInstanceMethod = "get_Instance";
         private static string contextCreateEntityMethod = "CreateEntity";
         private static string contextGetEntitiesMethod = "GetEntities";
 
@@ -48,12 +48,10 @@ namespace Morean.ECS
         public static Type GetContext(this ContextData data) => GetContext(data.Context);
 
         /// <summary>
-        /// Find contextType by name.
+        /// Find Context Type by name.
         /// </summary>
         public static Type GetContext(string context)
-            => contexts.FirstOrDefault(type => typeof(IContext).IsAssignableFrom(type) && !type.IsInterface);
-
-            //=> Array.Find(contexts, match => match.Name == contextType) as IContext;
+            => Array.Find(contexts, match => match.Name == context);
 
         #endregion Context
 
@@ -91,11 +89,16 @@ namespace Morean.ECS
         public static Entity[] CreateEntities(this Type contextType, int count)
         {
             var entities = new Entity[count];
-            var context = (IContext)Activator.CreateInstance(contextType);
+            var context = Activator.CreateInstance(contextType);
+
+            var instanceMethod = context.GetType().GetMethod(contextInstanceMethod, BindingFlags.Static | BindingFlags.Public);
+            var contextInstance = instanceMethod.Invoke(context, null);
+
             var creationMethod = context.GetType().GetMethod(contextCreateEntityMethod);
+
             for (int i = 0; i < count; i++)
             {
-                entities[i] = (Entity)creationMethod.Invoke(context, null);
+                entities[i] = (Entity)creationMethod.Invoke(contextInstance, null);
             }
             return entities;
         }
