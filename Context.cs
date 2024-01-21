@@ -10,7 +10,7 @@ using System.Reflection;
 namespace Morean.ECS
 {
     /// <summary>
-    /// Provides <see cref="IContexts"/> related utilities such as creating entities
+    /// Provides <see cref="IContext"/> related utilities such as creating entities
     /// and serializing and deserializing contexts with entities and components.
     /// </summary>
     public static class ContextExtentions
@@ -31,18 +31,6 @@ namespace Morean.ECS
         }
 
         /// <summary>
-        /// Create <see cref="Entity"/> in <paramref name="context"/>.
-        /// </summary>
-        public static Entity CreateEntity(this IContext context)
-            => (Entity)context.GetType().GetMethod(contextCreateEntityMethod).Invoke(context, null);
-
-        /// <summary>
-        /// Get <see cref="Entity"/> colleciton in <paramref name="context"/>.
-        /// </summary>
-        public static Entity[] GetEntities(this IContext context)
-            => (Entity[])context.GetType().GetMethod(contextGetEntitiesMethod).Invoke(context, null);
-
-        /// <summary>
         /// Find contextType by name.
         /// </summary>
         public static Type GetContext(this ContextData data) => GetContext(data.Context);
@@ -58,16 +46,10 @@ namespace Morean.ECS
         #region Entity
 
         /// <summary>
-        /// Create <see cref="Entity"/> collection in <paramref name="context"/>.
+        /// Create <see cref="Entity"/> in <paramref name="context"/>.
         /// </summary>
-        public static void CreateEntities(this Type context, params IComponent[][] entities)
-        {
-            var createdEntities = context.CreateEntities(entities.Length);
-            for (int i = 0; i < createdEntities.Length; i++)
-            {
-                createdEntities[i].AddComponents(entities[i]);
-            }
-        }
+        public static Entity CreateEntity(this IContext context)
+            => (Entity)context.GetType().GetMethod(contextCreateEntityMethod).Invoke(context, null);
 
         /// <summary>
         /// Create <see cref="Entity"/> in <paramref name="context"/>
@@ -82,6 +64,18 @@ namespace Morean.ECS
         /// </summary>
         public static void CreateEntity(this IContext context, params int[] componentIndices)
             => context.CreateEntity().AddComponents(componentIndices);
+
+        /// <summary>
+        /// Create <see cref="Entity"/> collection in <paramref name="context"/>.
+        /// </summary>
+        public static void CreateEntities(this Type context, params IComponent[][] entities)
+        {
+            var createdEntities = context.CreateEntities(entities.Length);
+            for (int i = 0; i < createdEntities.Length; i++)
+            {
+                createdEntities[i].AddComponents(entities[i]);
+            }
+        }
 
         /// <summary>
         /// Create <see cref="Entity"/> collection in <paramref name="contextType"/>.
@@ -102,6 +96,12 @@ namespace Morean.ECS
             }
             return entities;
         }
+
+        /// <summary>
+        /// Get <see cref="Entity"/> colleciton in <paramref name="context"/>.
+        /// </summary>
+        public static Entity[] GetEntities(this IContext context)
+            => (Entity[])context.GetType().GetMethod(contextGetEntitiesMethod).Invoke(context, null);
 
         #endregion Entity
 
